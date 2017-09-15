@@ -15,7 +15,7 @@
   Help class for the client class which sends udp packets to the server and returns replies from the server
   ## Server
   Starts up the server
-  ##ServerThread
+  ## ServerThread
   Waits for connections and replies to connected clients when it recieves data.
   Will terminate if it recieves "end"
   ## Utils
@@ -25,7 +25,9 @@
 # Description of packet
   first 4 bytes contains the integer for the size of the msg + hash, following bytes contains the actual message,
   last 32 bytes contains the hash of the message.
+  
   [0000][............][....................]
+  
   size      msg        sha-256 hash of msg 
   
 # Progress of project so far
