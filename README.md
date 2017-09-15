@@ -9,16 +9,16 @@
   * The server will reply with "reply: original message"
 # Description of system
   The project contains 5 classes: Client,EchoClient,Server,ServerThread,Utils
-  ##Client
+  ## Client
   Starts up the client and asks for input untill the user types "end". 
-  ##EchoClient
+  ## EchoClient
   Help class for the client class which sends udp packets to the server and returns replies from the server
-  ##Server
+  ## Server
   Starts up the server
   ##ServerThread
   Waits for connections and replies to connected clients when it recieves data.
   Will terminate if it recieves "end"
-  ##Utils
+  ## Utils
   Got some helper functions for building byte arrays that can be sent as packets.
   Packetsize is defined in this class, use it if you want to change packetsize to not break any code.
   
