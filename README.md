@@ -28,8 +28,6 @@
   
   [0000][............][....................]
   
-  size      msg        sha-256 hash of msg 
-  
 # Progress of project so far
 - [ ] Work on the principle of object security, ????
 - [x] provide integrity, this is complete by using hash, but we need to add encryption
