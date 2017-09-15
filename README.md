@@ -1,12 +1,12 @@
 # objsec
 # Getting started
-  open 2 terminal windows and run javac Client.java in one of them and javac Server.java in the other
-  run java Server <port number> in one of the windows and java Client <port number> in the other
-  port number should be the same.
-  ip address is hardcoded to localhost but can easily be changed in client class and server class.
+  * open 2 terminal windows and run javac Client.java in one of them and javac Server.java in the other
+  * run java Server <port number> in one of the windows and java Client <port number> in the other
+  * port number should be the same on client and server.
+  * ip address is hardcoded to localhost but can easily be changed in client class and server class.
 # Description
-  The client constantly asks for input from the user
-  The server will reply with "reply: <original message>"
+  * The client constantly asks for input from the user
+  * The server will reply with "reply: original message"
 # Description of system
   The project contains 5 classes: Client,EchoClient,Server,ServerThread,Utils
   ##Client
