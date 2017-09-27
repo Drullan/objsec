@@ -1,4 +1,3 @@
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -73,7 +72,7 @@ public class EchoClient {
 
  	    // Read shared secret
  	    byte[] sharedSecret = ka.generateSecret();
- 	    System.out.println("shared secret:" + printHexBinary(sharedSecret));
+ 	 //   System.out.println("shared secret:" + printHexBinary(sharedSecret));
  	    
  	   // Derive a key from the shared secret and both public keys
 	    MessageDigest hash = MessageDigest.getInstance("SHA-256");

@@ -1,5 +1,3 @@
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;

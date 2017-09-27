@@ -20,7 +20,7 @@ public class Client {
 			while(true){
 				System.out.println("enter a sentence, type end to quit");
 				send = sc.nextLine();
-				System.out.println("send this msg: " + send);
+		//		System.out.println("send this msg: " + send);
 				byte[] hash = Utils.addHash(send);
 				//System.out.println("added hash: " + Utils.getByteStream(hash));
 				byte[] hashns = Utils.addSize(hash);
