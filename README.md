@@ -1,7 +1,7 @@
 # objsec
 # Getting started
   * open 2 terminal windows and run javac Client.java in one of them and javac Server.java in the other
-  * run java Server <port number> in one of the windows and java Client <port number> in the other
+  * run java Server -port number in one of the windows and java Client -port number in the other
   * port number should be the same on client and server.
   * ip address is hardcoded to localhost but can easily be changed in client class and server class.
 # Description
@@ -30,11 +30,12 @@
   
 # Progress of project so far
 - [ ] Work on the principle of object security, ????
-- [x] provide integrity, this is complete by using hash, but we need to add encryption
-- [ ] provide confidentiality, need some encryption
+- [x] provide integrity, this is complete by using hash, no integritity is provided during handshake nor for the encrypted message. Only the original message sent can be garanteed to have integritiy protection.
+- [x] provide confidentiality, we use AES encryption
 - [ ] provide replay protection, possibly will need some nonces or dates depending on how we implement key exchanges and sessions
 - [X] use UDP as the way to exchange data between the two parties,
-- [ ] work on principle of forward security
-- [ ] should have at least two distinct parts; handshake and (protected) data exchange
+- [x] work on principle of forward security, new keys will be negotiated between every session, However if a key during 
+a session is compromised the atacker will be able to read and write during that entire session.
+- [x] should have at least two distinct parts; handshake and (protected) data exchange, diffie hellman ecc is used for handshake and aes encryption is used to protect the data.
 - [ ] actually work when we test it, ??
 - [ ] document the design choices for your implementation
