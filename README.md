@@ -23,7 +23,11 @@
   Packetsize is defined in this class, use it if you want to change packetsize to not break any code.
   
 # Description of packet
-  first 4 bytes contains the integer for the size of the msg + hash, following bytes contains the actual message,
+  first 4 bytes contains the integer for the size of the encrypted msg. The tail contains the encrypted msg
+  
+   [0000][..................................]
+   
+  after decryption the first 4 bytes contains the integer for the size of the decrypted msg + hash, following bytes contains the actual message,
   last 32 bytes contains the hash of the message.
   
   [0000][............][....................]
