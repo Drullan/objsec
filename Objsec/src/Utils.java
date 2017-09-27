@@ -2,6 +2,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 //util functions
 public class Utils {
@@ -28,9 +32,41 @@ public class Utils {
 			if(Arrays.equals(hash1,hash2)){
 				return value;
 			}else{
+				System.out.println("hash1: ");
+				for(int i=0; i<hash1.length; i++){
+					System.out.print(hash1[i]);
+				}
+				 System.out.println("hash2: ");
+				 for(int i=0; i<hash2.length; i++){
+						System.out.print(hash2[i]);
+					} 
 				return "this string has been tampered with: " + value;
 			}
 		}
+    }
+    
+    //only used for debugging, prints the byte array
+    public static String getByteStream(byte[] data){
+    	String s="";
+    	if(data==null){
+    		return s;
+    	}
+    	for(int i=0; i<data.length; i++){
+    		s+=data[i];
+    	}
+    	return s;
+    }
+    
+    //read data without checking integrity, used to read the encrypted stream and for the handshake
+    public static byte[] read(byte[] data){
+    	byte[] size = Arrays.copyOfRange(data,0,4);
+    	int length=(size[0]<<24)&0xff000000|
+    		       (size[1]<<16)&0x00ff0000|
+    		       (size[2]<< 8)&0x0000ff00|
+    		       (size[3]<< 0)&0x000000ff;
+    	
+    	byte[] msg = Arrays.copyOfRange(data, 4, length+4);
+    	return msg;
     }
     
     //add size to the given byte array
@@ -57,5 +93,49 @@ public class Utils {
 		System.arraycopy(msg, 0, returnvalue, 0, msg.length);
 		System.arraycopy(encodedhash,0,returnvalue,msg.length,encodedhash.length);
 		return returnvalue;
+	}
+	
+	//helper function for encrypt/decrypt
+	private static SecretKeySpec setKey(byte[] key) throws NoSuchAlgorithmException{
+		MessageDigest sha = null;
+        sha = MessageDigest.getInstance("SHA-1");
+        key = sha.digest(key);
+        key = Arrays.copyOf(key, 16);
+        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+        return secretKey;
+	}
+	
+	//encrypt a byte sequence
+	public static byte[] encrypt(byte[] bytesToEncrypt, byte[] secret){
+		try
+        {
+			SecretKeySpec secretKey=setKey(secret);
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            //Base64.getEncoder().encode(src)
+            return Base64.getEncoder().encode(cipher.doFinal(bytesToEncrypt));
+        }
+        catch (Exception e)
+        {
+            System.out.println("Error while encrypting: " + e.toString());
+        }
+        return null;
+	}
+	
+	//decrypt a byte sequence with a given key
+	public static byte[] decrypt(byte[] bytesToDecrypt, byte[] secret){
+        try{
+        //	String strToDecrypt = new String(bytesToDecrypt,"UTF-8");
+        	SecretKeySpec secretKey=setKey(secret);
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
+	        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+	    
+	        return cipher.doFinal(Base64.getDecoder().decode(bytesToDecrypt));
+	    }
+	    catch (Exception e)
+	    {
+	        System.out.println("Error while decrypting: " + e.toString());
+	    }
+	    return null;
 	}
 }
