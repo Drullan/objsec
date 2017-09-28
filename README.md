@@ -27,10 +27,10 @@
   
    [0000][..................................]
    
-  after decryption the first 4 bytes contains the integer for the size of the decrypted msg + hash, following bytes contains the actual message,
+  after decryption the first 4 bytes contains the integer for the size of the decrypted msg, next 4 bytes contains a nonce which is increased after every message, the next bytes contains the actual message,
   last 32 bytes contains the hash of the message.
   
-  [0000][............][....................]
+  [0000][0000][............][....................]
   
 # Progress of project so far
 - [ ] Work on the principle of object security, ????
