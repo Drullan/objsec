@@ -36,7 +36,7 @@
 - [ ] Work on the principle of object security, ????
 - [x] provide integrity, this is complete by using hash, no integritity is provided during handshake nor for the encrypted message. Only the original message sent can be garanteed to have integritiy protection.
 - [x] provide confidentiality, we use AES encryption
-- [ ] provide replay protection, possibly will need some nonces or dates depending on how we implement key exchanges and sessions
+- [x] provide replay protection, sessions are protected by negotiate different keys every time, messages within a session are protected with nonces. 
 - [X] use UDP as the way to exchange data between the two parties,
 - [x] work on principle of forward security, new keys will be negotiated between every session, However if a key during 
 a session is compromised the atacker will be able to read and write during that entire session.
