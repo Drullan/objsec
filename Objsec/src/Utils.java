@@ -13,7 +13,8 @@ public class Utils {
 	//entire project
 	
 	//decode the message from the given byte array and check if hashes match
-    public static String checkHash(byte[] data) throws NoSuchAlgorithmException{
+	//check that the nonce matches with the given nonce
+    public static String validateMsg(byte[] data, int nonce) throws NoSuchAlgorithmException{
     	byte[] size = Arrays.copyOfRange(data,0,4);
     	int length=(size[0]<<24)&0xff000000|
     		       (size[1]<<16)&0x00ff0000|
@@ -24,11 +25,21 @@ public class Utils {
     		//might become a problem if the message is over multiple udp packets
     		return new String(data,0,data.length);
     	}else{
-	    	byte[] msg = Arrays.copyOfRange(data, 4, length-28);
-	    	byte[] hash1 = Arrays.copyOfRange(data, length-28, length+4);
+    		size = Arrays.copyOfRange(data, 4, 8);
+    		int n=(size[0]<<24)&0xff000000|
+     		       (size[1]<<16)&0x00ff0000|
+     		       (size[2]<< 8)&0x0000ff00|
+     		       (size[3]<< 0)&0x000000ff;
+    		if(n!=nonce){
+    			return "wrong nonce";
+    		}
+    		//byte[] hash = Arrays.copyOfRange(data, 4, length-28);
+	    	byte[] msg = Arrays.copyOfRange(data, 8, length-28);//the bare msg
+	    	byte[] hash1 = Arrays.copyOfRange(data, length-28, length+4);//only the hash
+	    	//System.out.println("fetched hash: " + getByteStream(hash1));
 	    	String value = new String(msg,0,msg.length);
 	    	MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash2 = digest.digest(msg);
+			byte[] hash2 = digest.digest(Arrays.copyOfRange(data, 4, length-28));
 			if(Arrays.equals(hash1,hash2)){
 				return value;
 			}else{
@@ -84,14 +95,32 @@ public class Utils {
     	return values;
     }
     
+    //add a nonce to the byte stream
+    public static byte[] addNonce(String s,int nonce){
+    	byte[] data = s.getBytes(StandardCharsets.UTF_8);
+    	byte[] values = new byte[data.length+4];
+    	byte[] length = new byte[]{
+    			(byte)(nonce >>> 24),
+    			(byte)(nonce >>> 16),
+    			(byte)(nonce >>> 8),
+    			(byte)(nonce),
+    	};
+    	
+    	System.arraycopy(length,0,values,0,length.length);
+    	System.arraycopy(data, 0, values, 4, data.length);
+    	return values;
+    }
+    
+    
     //add a hash to the given string
-	public static byte[] addHash(String s) throws NoSuchAlgorithmException{
+	public static byte[] addHash(byte[] data) throws NoSuchAlgorithmException{
 		MessageDigest digest = MessageDigest.getInstance("SHA-256");
-		byte[] encodedhash = digest.digest(s.getBytes(StandardCharsets.UTF_8));
-		byte[] msg=s.getBytes();
-		byte[] returnvalue = new byte[encodedhash.length+msg.length];
-		System.arraycopy(msg, 0, returnvalue, 0, msg.length);
-		System.arraycopy(encodedhash,0,returnvalue,msg.length,encodedhash.length);
+		byte[] encodedhash = digest.digest(data);
+	//	System.out.println("added hash: " + getByteStream(encodedhash));
+		//byte[] msg=s.getBytes();
+		byte[] returnvalue = new byte[encodedhash.length+data.length];
+		System.arraycopy(data, 0, returnvalue, 0, data.length);
+		System.arraycopy(encodedhash,0,returnvalue,data.length,encodedhash.length);
 		return returnvalue;
 	}
 	

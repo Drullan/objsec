@@ -14,6 +14,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,9 +29,12 @@ public class ServerThread extends Thread{
 	    private boolean running;
 	    private byte[] buf = new byte[Utils.packetSize];
 	    private HashMap<InetAddress,byte[]> keymap;
+	    private HashMap<InetAddress,Integer> noncemap;
+	    
 	    public ServerThread(int port) throws SocketException {
 	        socket = new DatagramSocket(port);
 	        keymap = new HashMap<InetAddress,byte[]>();
+	        noncemap = new HashMap<InetAddress,Integer>();
 	    }
 	 
 	    public void run() {
@@ -84,50 +88,60 @@ public class ServerThread extends Thread{
 		        	//    System.out.println("Final key:" + printHexBinary(derivedKey));
 		        	    //store the key
 		            	keymap.put(address, derivedKey);
+		            	noncemap.put(address, 0);
 		            	
 		            	
 		            }
 		            else{
 		            	byte[] orig = packet.getData();
 		            	
-		           // 	System.out.println("orig: " + Utils.getByteStream(orig));
+		            	//System.out.println("orig: " +  Base64.getEncoder().encodeToString(orig));//used to test reply atacks
 		            	byte[] enc = Utils.read(orig);
-		            //	System.out.println("dropped size: " + Utils.getByteStream(enc));
+		            	//System.out.println("dropped size: " + Utils.getByteStream(enc));
 		            	byte[] dec = Utils.decrypt(enc, keymap.get(address));
-		            	//System.out.println("decrypted: " + Utils.getByteStream(dec));
-		            	String received = Utils.checkHash(dec);
-		            	System.out.println("final msg: " + received);
+		            //	System.out.println("decrypted: " + Utils.getByteStream(dec));
+		            	String received = Utils.validateMsg(dec,noncemap.get(address));
+		            	if(!received.equals("wrong nonce")){
+		            		noncemap.put(address, noncemap.get(address)+1);
 		            	
-		            	
-			       //     String received = Utils.checkHash(Utils.decrypt(Utils.read(packet.getData()),keymap.get(address)));//Utils.checkHash(packet.getData());
-			            if (received.equals("end")) {
-			            	System.out.println("close connection");
+			            	System.out.println("final msg: " + received);
+			            	
+			            	
+				       //     String received = Utils.checkHash(Utils.decrypt(Utils.read(packet.getData()),keymap.get(address)));//Utils.checkHash(packet.getData());
+				            if (received.equals("end")) {
+				            	System.out.println("close connection");
+				            	String temp = "reply: " + received;
+				            	buf = Utils.addSize(Utils.encrypt(Utils.addSize(Utils.addHash(Utils.addNonce(temp, noncemap.get(address).intValue()))),keymap.get(address)));
+								
+				            	packet = new DatagramPacket(buf, buf.length, address, port);
+				            	keymap.remove(address);
+				            	noncemap.remove(address);
+								socket.send(packet);
+				                running = false;
+				                continue;
+				            }
+				            
 			            	String temp = "reply: " + received;
-			            	buf = Utils.addSize(Utils.encrypt(Utils.addSize(Utils.addHash(temp)),keymap.get(address)));
-							
-			            	packet = new DatagramPacket(buf, buf.length, address, port);
-			            	keymap.remove(address);
+			            	
+			            	//System.out.println("send this msg: " + temp);
+			            	byte[] nonce = Utils.addNonce(temp, noncemap.get(address).intValue());
+							byte[] hash = Utils.addHash(nonce);
+							//System.out.println("added hash: " + Utils.getByteStream(hash));
+							byte[] hashns = Utils.addSize(hash);
+							//System.out.println("added size: " + Utils.getByteStream(hashns));
+							byte[] encrypt = Utils.encrypt(hashns, keymap.get(address));
+							//System.out.println("added encryption: " + Utils.getByteStream(encrypt));
+							byte[] encryptns = Utils.addSize(encrypt);
+							//System.out.println("added final size: " + Utils.getByteStream(encryptns));
+			            	
+			            	System.out.println("recieved: " + received);
+			            //	buf = Utils.addSize(Utils.encrypt(Utils.addSize(Utils.addHash(temp)),keymap.get(address)));
+			            //	packet = new DatagramPacket(buf, buf.length, address, port);
+			            	packet = new DatagramPacket(encryptns,encryptns.length,address,port);
 							socket.send(packet);
-			                running = false;
-			                continue;
-			            }
-		            	String temp = "reply: " + received;
-		            	
-		            	//System.out.println("send this msg: " + temp);
-						byte[] hash = Utils.addHash(temp);
-						//System.out.println("added hash: " + Utils.getByteStream(hash));
-						byte[] hashns = Utils.addSize(hash);
-						//System.out.println("added size: " + Utils.getByteStream(hashns));
-						byte[] encrypt = Utils.encrypt(hashns, keymap.get(address));
-						//System.out.println("added encryption: " + Utils.getByteStream(encrypt));
-						byte[] encryptns = Utils.addSize(encrypt);
-						//System.out.println("added final size: " + Utils.getByteStream(encryptns));
-		            	
-		            	System.out.println("recieved: " + received);
-		            //	buf = Utils.addSize(Utils.encrypt(Utils.addSize(Utils.addHash(temp)),keymap.get(address)));
-		            //	packet = new DatagramPacket(buf, buf.length, address, port);
-		            	packet = new DatagramPacket(encryptns,encryptns.length,address,port);
-						socket.send(packet);
+		            	}else{
+		            		System.out.println("stop reply atacking me!");
+		            	}
 		            }
 				} catch (IOException e) {
 					// TODO Auto-generated catch block

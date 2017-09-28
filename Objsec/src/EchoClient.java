@@ -91,22 +91,24 @@ public class EchoClient {
        
     }
     
-    public String sendEcho(byte[] buf,byte[] dk) throws IOException, NoSuchAlgorithmException {
+    public String sendEcho(byte[] buf,byte[] dk,int nonce) throws IOException, NoSuchAlgorithmException {
         DatagramPacket packet 
           = new DatagramPacket(buf, buf.length, address, port);
         //System.out.println("send packet: " + new String(buf));
+     //   System.out.println("send packet: " + Utils.getByteStream(buf));
         socket.send(packet);
+        nonce++;
         byte[] recieve = new byte[Utils.packetSize];
         packet = new DatagramPacket(recieve, recieve.length);
         socket.receive(packet);
         
     	byte[] orig = packet.getData();
-    	//System.out.println("orig: " + Utils.getByteStream(orig));
+    	//System.out.println("receive packet: " + Utils.getByteStream(orig));
     	byte[] enc = Utils.read(orig);
     	//System.out.println("dropped size: " + Utils.getByteStream(enc));
     	byte[] dec = Utils.decrypt(enc, dk);
     	//System.out.println("decrypted: " + Utils.getByteStream(dec));
-    	String received = Utils.checkHash(dec);
+    	String received = Utils.validateMsg(dec,nonce);
     	//System.out.println("final msg: " + received);
         
       //  String received = Utils.checkHash(Utils.decrypt(Utils.read(packet.getData()),dk));

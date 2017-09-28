@@ -17,11 +17,13 @@ public class Client {
 			String send;
 			String echo;
 			byte[] dk = client.handshake();
+			int nonce=0;
 			while(true){
 				System.out.println("enter a sentence, type end to quit");
 				send = sc.nextLine();
 		//		System.out.println("send this msg: " + send);
-				byte[] hash = Utils.addHash(send);
+				byte[] non = Utils.addNonce(send, nonce);
+				byte[] hash = Utils.addHash(non);
 				//System.out.println("added hash: " + Utils.getByteStream(hash));
 				byte[] hashns = Utils.addSize(hash);
 				//System.out.println("added size: " + Utils.getByteStream(hashns));
@@ -30,7 +32,8 @@ public class Client {
 				byte[] encryptns = Utils.addSize(encrypt);
 				//System.out.println("added final size: " + Utils.getByteStream(encryptns));
 				//echo = client.sendEcho(Utils.addSize(Utils.encrypt(Utils.addSize(Utils.addHash(send)),dk)),dk);
-				echo = client.sendEcho(encryptns, dk);
+				echo = client.sendEcho(encryptns, dk,nonce);
+				nonce++;
 				System.out.println(echo);
 				if(send.equals("end")){
 					client.close();
