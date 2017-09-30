@@ -1,5 +1,6 @@
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -26,11 +27,15 @@ public class EchoClient {
 	private DatagramSocket socket;
     private InetAddress address;
     private int port;
+    private BigInteger d;
+    private BigInteger n;
  
     public EchoClient(int serverport) throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
         address = InetAddress.getByName("localhost");
         port = serverport;
+        d = new BigInteger("526696509393763751665436556937193200647473011804811651");
+        n = new BigInteger("965610267221900211386633689709680083946428922042684753");
     }
  
     public byte[] handshake() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException{
@@ -83,6 +88,19 @@ public class EchoClient {
 	    hash.update(keys.get(0));
 	    hash.update(keys.get(1));
 
+	    //recieve a challange to sign
+	    recieve = new byte[Utils.packetSize];
+    	packet = new DatagramPacket(recieve, recieve.length);
+	    socket.receive(packet);
+	    byte[] challangebytes = Utils.read(packet.getData());
+	    BigInteger challange = new BigInteger(challangebytes);
+	    RSA rsa = new RSA();
+	    BigInteger signed = rsa.sign(challange, d, n);
+	    
+	    byte[] signedBytes=Utils.addSize(signed.toByteArray());
+	    packet = new DatagramPacket(signedBytes,signedBytes.length,address,port);
+	    socket.send(packet);
+	    
 	    byte[] derivedKey = hash.digest();
 	  //  System.out.println("Final key:" + printHexBinary(derivedKey));
 	    System.out.println("connected");

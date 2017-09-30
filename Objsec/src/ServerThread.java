@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -18,6 +19,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import javax.crypto.KeyAgreement;
 
@@ -30,11 +32,13 @@ public class ServerThread extends Thread{
 	    private byte[] buf = new byte[Utils.packetSize];
 	    private HashMap<InetAddress,byte[]> keymap;
 	    private HashMap<InetAddress,Integer> noncemap;
+	    private HashMap<InetAddress,PubKey> publickeymap;
 	    
 	    public ServerThread(int port) throws SocketException {
 	        socket = new DatagramSocket(port);
 	        keymap = new HashMap<InetAddress,byte[]>();
 	        noncemap = new HashMap<InetAddress,Integer>();
+	        publickeymap = new HashMap<InetAddress,PubKey>();
 	    }
 	 
 	    public void run() {
@@ -46,6 +50,7 @@ public class ServerThread extends Thread{
 	            try {
 					socket.receive(packet);
 		            InetAddress address = packet.getAddress();
+		            publickeymap.put(address, new PubKey(new BigInteger("965610267221900211386633689709680083946428922042684753"),11));
 		            int port = packet.getPort();
 		            if(!keymap.containsKey(address)){
 		            	//fetch client key
@@ -74,7 +79,7 @@ public class ServerThread extends Thread{
 		         	    // Read shared secret
 		         	    byte[] sharedSecret = ka.generateSecret();
 		         	 //   System.out.println("shared secret:" + printHexBinary(sharedSecret));
-		         	    
+
 		         	   // Derive a key from the shared secret and both public keys
 		        	    MessageDigest hash = MessageDigest.getInstance("SHA-256");
 		        	    hash.update(sharedSecret);
@@ -84,12 +89,31 @@ public class ServerThread extends Thread{
 		        	    hash.update(keys.get(0));
 		        	    hash.update(keys.get(1));
 
+		        	    
+		        	    //generate random value to be signed
+		        	    Random rand = new Random();
+		        	    int r= rand.nextInt(6000);
+		        	    BigInteger msg = Utils.hash(""+r);
+		        	    byte[] cert = Utils.addSize(msg.toByteArray());
+		        	    packet = new DatagramPacket(cert,cert.length,address,port);
+		        	    socket.send(packet);
+		        	    
+		        	    packet = new DatagramPacket(buf, buf.length);
+		        	    socket.receive(packet);
+		        	    byte[] signedBytes = Utils.read(packet.getData());
+		        	    BigInteger signed = new BigInteger(signedBytes);
+		        	    RSA rsa = new RSA();
+		        	    if(!rsa.verifysign(signed, publickeymap.get(address).e, publickeymap.get(address).n).equals(msg)){
+		        	    	System.out.println("couldn't verify this user, exiting...");
+		        	    	break;
+		        	    }
+		        	    
 		        	    byte[] derivedKey = hash.digest();
 		        	//    System.out.println("Final key:" + printHexBinary(derivedKey));
 		        	    //store the key
 		            	keymap.put(address, derivedKey);
 		            	noncemap.put(address, 0);
-		            	
+		    	        
 		            	
 		            }
 		            else{
