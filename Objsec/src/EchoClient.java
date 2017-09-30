@@ -19,6 +19,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import javax.crypto.KeyAgreement;
 
@@ -29,6 +30,7 @@ public class EchoClient {
     private int port;
     private BigInteger d;
     private BigInteger n;
+    private PubKey pubk;//servers public key
  
     public EchoClient(int serverport) throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
@@ -36,6 +38,7 @@ public class EchoClient {
         port = serverport;
         d = new BigInteger("526696509393763751665436556937193200647473011804811651");
         n = new BigInteger("965610267221900211386633689709680083946428922042684753");
+        pubk = new PubKey(new BigInteger("903568581836942277823087494889323859446530238712611721"),19);
     }
  
     public byte[] handshake() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException{
@@ -96,10 +99,29 @@ public class EchoClient {
 	    BigInteger challange = new BigInteger(challangebytes);
 	    RSA rsa = new RSA();
 	    BigInteger signed = rsa.sign(challange, d, n);
-	    
+
 	    byte[] signedBytes=Utils.addSize(signed.toByteArray());
 	    packet = new DatagramPacket(signedBytes,signedBytes.length,address,port);
 	    socket.send(packet);
+	    
+	    
+	    //generate random value to be signed
+	    Random rand = new Random();
+	    int r= rand.nextInt(6000);
+	    BigInteger msg = Utils.hash(""+r);
+	    byte[] cert = Utils.addSize(msg.toByteArray());
+	    packet = new DatagramPacket(cert,cert.length,address,port);
+	    socket.send(packet);
+	    
+	    packet = new DatagramPacket(buf, buf.length);
+	    socket.receive(packet);
+	    signedBytes = Utils.read(packet.getData());
+	    signed = new BigInteger(signedBytes);
+	   // RSA rsa = new RSA();
+	    if(!rsa.verifysign(signed, pubk.e, pubk.n).equals(msg)){
+	    	System.out.println("couldn't verify this server, exiting...");
+	    	return null;
+	    }
 	    
 	    byte[] derivedKey = hash.digest();
 	  //  System.out.println("Final key:" + printHexBinary(derivedKey));

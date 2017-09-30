@@ -33,12 +33,17 @@ public class ServerThread extends Thread{
 	    private HashMap<InetAddress,byte[]> keymap;
 	    private HashMap<InetAddress,Integer> noncemap;
 	    private HashMap<InetAddress,PubKey> publickeymap;
+	    private BigInteger d;
+	    private BigInteger n;
 	    
 	    public ServerThread(int port) throws SocketException {
 	        socket = new DatagramSocket(port);
 	        keymap = new HashMap<InetAddress,byte[]>();
 	        noncemap = new HashMap<InetAddress,Integer>();
 	        publickeymap = new HashMap<InetAddress,PubKey>();
+	        d = new BigInteger("856012340687629526358714467026400016619089074710243579");
+	        n = new BigInteger("903568581836942277823087494889323859446530238712611721");
+	        
 	    }
 	 
 	    public void run() {
@@ -97,7 +102,6 @@ public class ServerThread extends Thread{
 		        	    byte[] cert = Utils.addSize(msg.toByteArray());
 		        	    packet = new DatagramPacket(cert,cert.length,address,port);
 		        	    socket.send(packet);
-		        	    
 		        	    packet = new DatagramPacket(buf, buf.length);
 		        	    socket.receive(packet);
 		        	    byte[] signedBytes = Utils.read(packet.getData());
@@ -107,6 +111,19 @@ public class ServerThread extends Thread{
 		        	    	System.out.println("couldn't verify this user, exiting...");
 		        	    	break;
 		        	    }
+		        	    
+		        	    //recieve a challange to sign
+		        	    byte[] recieve = new byte[Utils.packetSize];
+		            	packet = new DatagramPacket(recieve, recieve.length);
+		        	    socket.receive(packet);
+		        	    byte[] challangebytes = Utils.read(packet.getData());
+		        	    BigInteger challange = new BigInteger(challangebytes);
+		        	    signed = rsa.sign(challange, d, n);
+		        	    signedBytes=Utils.addSize(signed.toByteArray());
+		        	    packet = new DatagramPacket(signedBytes,signedBytes.length,address,port);
+		        	    socket.send(packet);
+		        	    
+		        	    
 		        	    
 		        	    byte[] derivedKey = hash.digest();
 		        	//    System.out.println("Final key:" + printHexBinary(derivedKey));
